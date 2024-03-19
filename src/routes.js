@@ -10,7 +10,7 @@ export const routes = [
     path: buildRoutePath("/tasks"),
     handler: (request, response) => {
       const { search } = request.query ?? {};
-      console.log("search", search);
+
       try {
         const tasks = database.select(
           "tasks",
@@ -87,20 +87,25 @@ export const routes = [
     path: buildRoutePath("/tasks/:id"),
     handler: (request, response) => {
       const { id } = request.params;
+      const { completed_at } = request.body || {};
+
       if (!id) {
         return response.writeHead(400).end('Missing "id" parameter');
       }
-      const { title, description } = request.body || {};
-      const task = database.select("tasks", { id });
+
+      const [task] = database.select("tasks", { id });
+
       if (!task) {
         return response.writeHead(404).end("Task not found");
       }
-      database.update("tasks", id, {
-        title: title !== undefined ? title : task.title || "",
-        description:
-          description !== undefined ? description : task.description || "",
-        updatedAt: new Date(),
-      });
+
+      const isTaskCompleted = completed_at === true;
+      if (isTaskCompleted) {
+        database.update("tasks", id, {
+          completed_at: new Date(),
+          updatedAt: new Date(),
+        });
+      }
       return response.writeHead(204).end();
     },
   },
